@@ -1,0 +1,11 @@
+# Core demos (01, 03, 04, 05) require only the Python standard library.
+
+# Garak - LLM vulnerability scanner (for demo 02)
+garak>=0.9.0
+
+# Hugging Face (for local GPT-2 scanning with Garak)
+transformers>=4.30.0
+torch>=2.0.0
+
+# Optional: OpenAI API (to test against OpenAI models)
+openai>=1.0.0
