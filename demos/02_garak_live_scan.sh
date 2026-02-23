@@ -4,9 +4,9 @@
 # SCALE 23x - Red Teaming the Robot
 #
 # Run different Garak scans for live demonstration.
-# Usage: bash demos/02_garak_live_scan.sh [scan_type]
+# Usage: bash demos/02_garak_live_scan.sh [scan_type] [model]
 #
-# scan_types: quick | dan | encoding | full | rest
+# scan_types: quick | dan | encoding | full | rest | anthropic
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -38,6 +38,7 @@ run_cmd() {
 }
 
 SCAN_TYPE="${1:-quick}"
+MODEL="${2:-}"
 
 banner "GARAK LIVE SCAN - Red Teaming the Robot"
 
@@ -107,7 +108,7 @@ case "$SCAN_TYPE" in
             info "Server detected at localhost:8080"
         else
             warn "Server not detected. Starting it in background..."
-            cd vulnerable_app && python api_server.py &
+            cd vulnerable_app && python3 api_server.py &
             sleep 2
             cd ..
         fi
@@ -118,21 +119,49 @@ case "$SCAN_TYPE" in
             --generations 3"
         ;;
 
+    # ─── Anthropic API Scan (real Claude model) ──────────────────────
+    anthropic)
+        ANTHROPIC_MODEL="${MODEL:-claude-haiku-4-5-20251001}"
+
+        banner "Anthropic API Scan: ${ANTHROPIC_MODEL}"
+        info "Scanning real Claude model via Anthropic API"
+        info "Model: ${ANTHROPIC_MODEL}"
+
+        if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo -e "  ${RED}[ERROR]${RESET} ANTHROPIC_API_KEY not set"
+            echo -e "  Set it with: export ANTHROPIC_API_KEY=sk-ant-..."
+            exit 1
+        fi
+        info "API key: ${ANTHROPIC_API_KEY:0:12}..."
+        echo ""
+
+        warn "This will make real API calls. Estimated cost: ~\$0.05"
+        echo ""
+
+        run_cmd "garak --model_type anthropic --model_name ${ANTHROPIC_MODEL} \
+            --probes dan.Dan_6_0 \
+            --generations 3"
+        ;;
+
     *)
         echo -e "${RED}Unknown scan type: ${SCAN_TYPE}${RESET}"
         echo ""
-        echo "Usage: $0 [quick|dan|encoding|full|rest]"
+        echo "Usage: $0 [quick|dan|encoding|full|rest|anthropic] [model]"
         echo ""
-        echo "  quick    - Fast DAN jailbreak scan on GPT-2 (default)"
-        echo "  dan      - Multiple DAN variants"
-        echo "  encoding - Base64, ROT13, Morse encoding attacks"
-        echo "  full     - Comprehensive scan (slow)"
-        echo "  rest     - Scan REST API (needs api_server.py running)"
+        echo "  quick     - Fast DAN jailbreak scan on GPT-2 (default)"
+        echo "  dan       - Multiple DAN variants"
+        echo "  encoding  - Base64, ROT13, Morse encoding attacks"
+        echo "  full      - Comprehensive scan (slow)"
+        echo "  rest      - Scan REST API (needs api_server.py running)"
+        echo "  anthropic - Scan real Claude model via Anthropic API"
+        echo ""
+        echo "  [model]   - Optional model override for anthropic mode"
+        echo "              Default: claude-haiku-4-5-20251001"
         exit 1
         ;;
 esac
 
 banner "SCAN COMPLETE"
 info "Results saved in ~/.local/share/garak/runs/ and ./runs/"
-info "Generate HTML report: python scripts/generate_report.py"
+info "Generate HTML report: python3 scripts/generate_report.py"
 echo ""

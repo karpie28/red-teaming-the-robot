@@ -9,3 +9,9 @@ torch>=2.0.0
 
 # Optional: OpenAI API (to test against OpenAI models)
 openai>=1.0.0
+
+# Anthropic API (for --live mode against Claude)
+anthropic>=0.40.0
+
+# AWS Bedrock (for --backend bedrock mode against DeepSeek R1 on AWS)
+boto3>=1.34.0

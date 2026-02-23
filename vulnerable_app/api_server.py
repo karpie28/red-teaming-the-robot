@@ -3,10 +3,11 @@
 Vulnerable API Server - REST Endpoint for Garak Testing
 
 This creates a REST API that Garak can target using its REST generator.
-The API wraps the vulnerable chatbot for automated testing.
+The API wraps the vulnerable chatbot (or real Claude) for automated testing.
 
-Run with: python api_server.py
-Then target with: garak --model_type rest --model_name http://localhost:8080/chat
+Run with: python3 api_server.py
+          python3 api_server.py --backend anthropic --model claude-haiku-4-5-20251001
+Then target with: garak --model_type rest --model_name http://localhost:8080/generate
 """
 
 import os
@@ -21,6 +22,7 @@ class VulnerableAPIHandler(BaseHTTPRequestHandler):
     """HTTP handler for the vulnerable chatbot API."""
 
     chatbot = None  # Shared instance
+    token_tracker = None  # Optional, set when using anthropic backend
 
     def _send_json_response(self, data: dict, status: int = 200):
         """Send a JSON response."""
@@ -50,16 +52,21 @@ class VulnerableAPIHandler(BaseHTTPRequestHandler):
             self._send_json_response({
                 "name": "Vulnerable Chatbot API",
                 "version": "1.0.0",
+                "backend": "anthropic" if VulnerableAPIHandler.token_tracker else "mock",
                 "endpoints": {
                     "/chat": "POST - Send a message",
                     "/generate": "POST - Generate text (Garak compatible)",
                     "/health": "GET - Health check",
                     "/reset": "POST - Reset conversation",
+                    "/stats": "GET - Token usage stats (anthropic backend only)",
                 }
             })
 
         elif parsed.path == "/health":
             self._send_json_response({"status": "healthy"})
+
+        elif parsed.path == "/stats":
+            self._handle_stats()
 
         else:
             self._send_error("Not found", 404)
@@ -134,15 +141,49 @@ class VulnerableAPIHandler(BaseHTTPRequestHandler):
             "outputs": [response],
         })
 
+    def _handle_stats(self):
+        """Handle token usage stats request."""
+        tracker = VulnerableAPIHandler.token_tracker
+        if tracker:
+            self._send_json_response({
+                "backend": "anthropic",
+                "model": tracker.model,
+                "input_tokens": tracker.input_tokens,
+                "output_tokens": tracker.output_tokens,
+                "api_calls": tracker.api_calls,
+                "estimated_cost_usd": tracker.estimate_cost(),
+            })
+        else:
+            self._send_json_response({
+                "backend": "mock",
+                "message": "Token tracking only available with --backend anthropic",
+            })
+
     def log_message(self, format, *args):
         """Custom logging."""
         print(f"[API] {args[0]}")
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8080):
+def run_server(host: str = "0.0.0.0", port: int = 8080,
+               backend: str = "mock", model: str = None,
+               system_prompt: str = "weak", api_key: str = None):
     """Run the API server."""
-    api_key = os.environ.get("OPENAI_API_KEY")
-    VulnerableAPIHandler.chatbot = VulnerableChatbot(api_key=api_key)
+
+    if backend == "anthropic":
+        from anthropic_chatbot import AnthropicChatbot
+        bot = AnthropicChatbot(
+            api_key=api_key,
+            model=model or "claude-haiku-4-5-20251001",
+            system_prompt_mode=system_prompt,
+        )
+        VulnerableAPIHandler.chatbot = bot
+        VulnerableAPIHandler.token_tracker = bot.token_tracker
+        backend_label = f"Anthropic ({bot.model}, prompt={system_prompt})"
+    else:
+        openai_key = os.environ.get("OPENAI_API_KEY")
+        VulnerableAPIHandler.chatbot = VulnerableChatbot(api_key=openai_key)
+        VulnerableAPIHandler.token_tracker = None
+        backend_label = "Mock (VulnerableChatbot)"
 
     server = HTTPServer((host, port), VulnerableAPIHandler)
 
@@ -150,6 +191,7 @@ def run_server(host: str = "0.0.0.0", port: int = 8080):
     print("VULNERABLE API SERVER - FOR TESTING ONLY")
     print("=" * 60)
     print(f"Server running at http://{host}:{port}")
+    print(f"Backend: {backend_label}")
     print()
     print("Garak usage:")
     print(f"  garak --model_type rest.RestGenerator \\")
@@ -160,12 +202,17 @@ def run_server(host: str = "0.0.0.0", port: int = 8080):
     print(f"  curl -X POST http://localhost:{port}/chat \\")
     print(f"       -H 'Content-Type: application/json' \\")
     print(f"       -d '{{\"prompt\": \"Hello!\"}}'")
+    if backend == "anthropic":
+        print()
+        print(f"Token stats: curl http://localhost:{port}/stats")
     print("-" * 60)
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nShutting down...")
+        if VulnerableAPIHandler.token_tracker:
+            print(f"Final stats: {VulnerableAPIHandler.token_tracker.summary()}")
         server.shutdown()
 
 
@@ -175,6 +222,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Vulnerable API Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
+    parser.add_argument(
+        "--backend", default="mock", choices=["mock", "anthropic"],
+        help="Backend: mock (VulnerableChatbot) or anthropic (real Claude API)"
+    )
+    parser.add_argument(
+        "--model", default=None,
+        help="Claude model to use with anthropic backend"
+    )
+    parser.add_argument(
+        "--system-prompt", default="weak",
+        choices=["none", "weak", "hardened"],
+        help="System prompt mode for anthropic backend"
+    )
+    parser.add_argument(
+        "--api-key", default=None,
+        help="Anthropic API key (default: ANTHROPIC_API_KEY env var)"
+    )
 
     args = parser.parse_args()
-    run_server(args.host, args.port)
+    run_server(
+        args.host, args.port,
+        backend=args.backend,
+        model=args.model,
+        system_prompt=args.system_prompt,
+        api_key=args.api_key,
+    )

@@ -25,5 +25,8 @@ Thumbs.db
 .env
 .env.local
 
+# Attack cache (adaptive LLM-vs-LLM attempt history)
+demos/.attack_cache/
+
 # Claude Code
 .claude/
