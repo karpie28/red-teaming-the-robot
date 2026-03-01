@@ -55,10 +55,10 @@ Garak (breadth) → PyRIT deep dive (depth) — Crescendo, converters, multi-tur
 **Act 3 — "The Punchline"** (0:44–0:52)
 Claude blocks textbook attacks → DeepSeek R1 falls to ALL 4 research-backed attacks → "This is what enterprises are deploying" → real quotes from DeepSeek's output
 
-**Act 4 — "Here's How To Fix It"** (0:52–1:00)
-Guardrails → supply chain → CI/CD → Monday morning action items
+**Act 4 — "Here's How To Fix It"** (0:50–1:02)
+Guardrails → supply chain (expanded) → CI/CD → Monday morning action items
 
-**The narrative tension:** Acts 1-2 break things. Act 3 delivers the punchline — the gap between frontier models and what enterprises actually deploy. Act 4 delivers hope + actionable steps.
+**The narrative tension:** Acts 1-2 break things. Act 3 delivers the punchline — the gap between frontier models and what enterprises actually deploy. Act 4 delivers hope + actionable steps. Slide order now matches: punchline BEFORE defense.
 
 ---
 
@@ -299,39 +299,75 @@ python3 demos/06_deepseek_attacks.py --live --backend anthropic
 
 ---
 
-### DEFENSE — Guardrails (0:52–0:56) — 4 min
+### DEFENSE — Guardrails (0:50–0:54) — 4 min
 
 **Slide: Defensive Architectures**
 - "OK, we've spent 50 minutes breaking things. Let's fix them."
 
 **Slide: Guardrails Pattern**
 - Walk through the sandwich: Input Guard → LLM → Output Guard
+- "This is the same pattern as WAF + backend + output encoding in web security."
 
 **Slides: Code Examples** (Input, Output, System Prompt)
-- Quick walk-through. "200 lines of Python. Less than 5ms latency."
+- Don't linger—audience can see the code. Highlight the key insight:
+- "Input guard: regex for injection patterns PLUS recursive Base64/ROT13 decoding."
+- "Output guard: catches PII, secrets, API keys before they reach the user."
+- "System prompt: immutable rules with explicit trust boundaries."
 
 **Slide: Guardrails Demo**
 ```bash
-python3 demos/04_guardrails_demo.py           # mock mode
+python3 demos/04_guardrails_demo.py           # mock mode (~20s)
 python3 demos/04_guardrails_demo.py --live     # live mode
 ```
 - "Same attacks, side-by-side. UNGUARDED vs GUARDED. Every injection caught."
+- Quick demo—mock mode takes ~20 seconds.
 
 ---
 
-### SUPPLY CHAIN + CI/CD (0:56–0:58) — 2 min
+### SUPPLY CHAIN + CI/CD (0:54–1:00) — 6 min
 
-**Slides: Supply Chain**
-- Quick hits: "100+ malicious models on HuggingFace. Pickle = code execution."
-- "Slopsquatting: LLMs hallucinate package names, attackers register them."
-- "Safetensors, hash verify, picklescan."
+> **This maps directly to the abstract's 4th key topic.** DevOps/DevSecOps audiences will deeply relate—this is dependency management applied to model weights.
+
+**Slide: Supply Chain — The Hidden Threat**
+- "We've talked about prompt injection. But there's another attack surface most teams ignore entirely: the model supply chain."
+- Walk through the "What's Happened" column. Highlight:
+  - "March 2024: JFrog found 100+ malicious models on Hugging Face. Not suspicious repos—models that looked legitimate, with stars and downloads."
+  - "Pickle evasion via 7z compression: attackers found ways to bypass Hugging Face's own scanners."
+- "This is OWASP LLM05. Same class of bug as dependency confusion, but for model weights."
+
+**Slide: Slopsquatting**
+- "Here's a new one most of you haven't heard yet."
+- Walk through the diagram slowly.
+- "A developer asks ChatGPT for help. The AI hallucinates a package name—'flask-crsf' instead of 'flask-csrf'. An attacker registers that exact name on PyPI with malware. The developer runs pip install."
+- "Typosquatting relied on humans making typos. Slopsquatting exploits AI hallucinations at scale—and AI makes the SAME mistakes repeatedly."
+- KEY LINE: "If your developers use AI coding assistants, this is happening in your codebase right now."
+
+**Slide: Pickle Danger Zone**
+- "Most model formats use Python's pickle serialization. When you call pickle.load(), you're running arbitrary code."
+- Point at the `__reduce__` method. "This runs during LOADING. Not during inference. The model doesn't even need to make a prediction to own your machine."
+
+**Slide: Safetensors + Verification**
+- "Three defenses: safetensors (data only, no code), hash verification, and model signing."
+- "If you take one thing from the supply chain section: switch to safetensors."
+
+**Slide: Checklist**
+- Quick walkthrough. "Six steps. Pin versions, scan with picklescan, sandbox loading, audit sources."
+
+**Slide: Supply Chain Demo**
+```bash
+python3 demos/05_supply_chain_check.py    # ~15s
+```
+- "Watch: we create a malicious pickle, show code execution on load, then scan it."
+- Demo is fast (~15s). Let the audience see the pickle scanner output.
 
 **Slide: CI/CD**
-- "Put Garak in your pipeline. Fail the build on critical findings."
+- "Two pipeline jobs. First: supply chain integrity—picklescan blocks malicious models, hash verification catches tampering."
+- "Second: Garak scans your LLM endpoint for prompt injection."
+- "Treat LLM security exactly like SAST/DAST. Automate it."
 
 ---
 
-### CLOSING (0:58–1:00) — 2 min
+### CLOSING (1:00–1:02) — 2 min (use buffer if needed)
 
 **Slide: What To Do Monday Morning**
 - Walk through the 4-week plan. This is the most actionable slide.
@@ -380,7 +416,7 @@ A: "Everything today maps directly. Prompt injection is LLM01. Insecure output h
 
 **If demo crashes:** "Live demos with probabilistic systems — never boring! Here's what the results look like..." and move to results slides.
 
-**If running short on time:** Cut supply chain section entirely. Jump from "Why Red Team?" to "What To Do Monday Morning."
+**If running short on time:** Shorten supply chain to just the "Hidden Threat" slide + checklist (skip pickle code, slopsquatting diagram, and demo). Saves ~3 minutes.
 
 **If running long:** Cut Garak live scan and one PyRIT strategy. Keep Crescendo and DeepSeek — they're the centerpieces.
 

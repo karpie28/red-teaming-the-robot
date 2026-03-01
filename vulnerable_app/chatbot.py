@@ -24,7 +24,6 @@ try:
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
-    print("Warning: OpenAI not installed. Using mock responses.")
 
 
 @dataclass

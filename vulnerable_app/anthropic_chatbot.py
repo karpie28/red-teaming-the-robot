@@ -282,7 +282,7 @@ def get_chatbot(live: bool = False, model: str = None, system_prompt_mode: str =
     if backend == "bedrock":
         from bedrock_chatbot import BedrockChatbot
         return BedrockChatbot(
-            model=model or "us.deepseek.r1-v1:0",
+            model=model or "us.anthropic.claude-3-5-haiku-20241022-v1:0",
             system_prompt_mode=system_prompt_mode,
         )
 
@@ -301,7 +301,7 @@ def add_live_args(parser: argparse.ArgumentParser):
     )
     parser.add_argument(
         "--model", default=None,
-        help="Model to use (default: claude-haiku-4-5-20251001 for anthropic, deepseek-r1:8b for ollama, us.deepseek.r1-v1:0 for bedrock)"
+        help="Model to use (default: us.anthropic.claude-3-5-haiku-20241022-v1:0 for bedrock, deepseek-r1:8b for ollama, claude-haiku-4-5-20251001 for anthropic)"
     )
     parser.add_argument(
         "--system-prompt", default="weak",
@@ -310,12 +310,12 @@ def add_live_args(parser: argparse.ArgumentParser):
     )
     parser.add_argument(
         "--api-key", default=None,
-        help="Anthropic API key (default: ANTHROPIC_API_KEY env var)"
+        help="Anthropic API key (only needed with --backend anthropic)"
     )
     parser.add_argument(
-        "--backend", default="anthropic",
+        "--backend", default="bedrock",
         choices=["anthropic", "ollama", "bedrock"],
-        help="Backend: anthropic (Claude API), ollama (local model), or bedrock (AWS Bedrock) (default: anthropic)"
+        help="Backend: bedrock (AWS Bedrock, default), ollama (local model), or anthropic (Claude API)"
     )
 
 
@@ -326,7 +326,7 @@ def get_chatbot_from_args(args) -> object:
         model=args.model,
         system_prompt_mode=args.system_prompt,
         api_key=args.api_key,
-        backend=getattr(args, "backend", "anthropic"),
+        backend=getattr(args, "backend", "bedrock"),
     )
 
 
@@ -334,6 +334,21 @@ def print_token_summary(bot):
     """Print token usage summary if the bot is an AnthropicChatbot."""
     if isinstance(bot, AnthropicChatbot):
         print(f"\n  \033[96m[Token Usage] {bot.token_tracker.summary()}\033[0m")
+
+
+def presenter_pause(next_topic="", enabled=True):
+    """Pause between demo acts for presenter to address the audience.
+
+    Call this between major sections so the presenter can explain
+    what just happened before moving on.
+    """
+    if not enabled:
+        return
+    print(f"\n  \033[96m{'─' * 50}\033[0m")
+    if next_topic:
+        print(f"  \033[96m\033[1m▶ Next: {next_topic}\033[0m")
+    print(f"  \033[2mPress Enter to continue...\033[0m", end="")
+    input()
 
 
 def is_live(bot) -> bool:

@@ -31,6 +31,7 @@ from chatbot import VulnerableChatbot
 from anthropic_chatbot import (
     add_live_args, get_chatbot_from_args, print_token_summary,
     is_live, SemanticAttackScorer, AnthropicChatbot,
+    presenter_pause,
 )
 
 # ─── Terminal Colors ─────────────────────────────────────────────────
@@ -768,6 +769,8 @@ def main():
         result = CrescendoOrchestrator(target, scorer).run("fiction_to_reality")
         all_results.append(result)
 
+    presenter_pause("Converter Chains — encoding + obfuscation bypasses", enabled=live_mode)
+
     # ═══ PART 2: CONVERTER CHAINS ═════════════════════════════════════
     section("PART 2: CONVERTER CHAINS (Encoding Bypasses)")
     print(f"""  {DIM}PyRIT has 30+ converters that transform prompts to bypass filters:
@@ -780,6 +783,8 @@ def main():
 
     chain_results = ConverterChainOrchestrator(target, scorer).run()
     all_results.extend(chain_results)
+
+    presenter_pause("Multi-Turn Red Teaming — adaptive attack strategies", enabled=live_mode)
 
     # ═══ PART 3: MULTI-TURN RED TEAMING ══════════════════════════════
     section("PART 3: MULTI-TURN RED TEAMING")
@@ -800,6 +805,7 @@ def main():
 
     # ═══ PART 4: ADAPTIVE LLM-vs-LLM (Live Only) ════════════════════
     if live_mode:
+        presenter_pause("Adaptive LLM-vs-LLM — Opus attacks Haiku", enabled=live_mode)
         section("PART 4: ADAPTIVE LLM-vs-LLM RED TEAMING")
         print(f"""  {DIM}Real LLM-vs-LLM: the attacker model generates novel prompts
   based on the target's responses. Previous attempts are cached

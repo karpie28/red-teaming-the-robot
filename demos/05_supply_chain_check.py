@@ -18,7 +18,11 @@ import struct
 import json
 import tempfile
 import pickle
+import argparse
 from pathlib import Path
+
+sys.path.insert(0, "vulnerable_app")
+from anthropic_chatbot import presenter_pause
 
 # ─── Terminal Colors ─────────────────────────────────────────────────
 RED = "\033[91m"
@@ -349,6 +353,16 @@ def demo_checklist():
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Demo 05: Supply Chain Security — Model Integrity Verification"
+    )
+    parser.add_argument(
+        "--pause", action="store_true",
+        help="Pause between sections for live presentation"
+    )
+    args = parser.parse_args()
+    pause = args.pause
+
     print(f"""
 {YELLOW}{BOLD}
   ╔═══════════════════════════════════════════════════════════╗
@@ -363,8 +377,11 @@ def main():
 """)
 
     demo_pickle_danger()
+    presenter_pause("Hash Verification — detecting tampered models", enabled=pause)
     demo_hash_verification()
+    presenter_pause("Pickle Scanner — automated security scanning", enabled=pause)
     demo_pickle_scanner()
+    presenter_pause("Supply Chain Security Checklist", enabled=pause)
     demo_checklist()
 
     print(f"""

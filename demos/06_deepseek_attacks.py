@@ -18,8 +18,9 @@ Research backing:
 
 Run:
   python3 demos/06_deepseek_attacks.py                          # mock mode
+  python3 demos/06_deepseek_attacks.py --live                    # DeepSeek R1 on Bedrock
   python3 demos/06_deepseek_attacks.py --live --backend ollama   # local DeepSeek
-  python3 demos/06_deepseek_attacks.py --live --backend anthropic # Claude comparison
+  python3 demos/06_deepseek_attacks.py --live --model us.anthropic.claude-3-5-haiku-20241022-v1:0  # Claude comparison
 """
 
 import sys
@@ -32,6 +33,7 @@ sys.path.insert(0, "vulnerable_app")
 from anthropic_chatbot import (
     add_live_args, get_chatbot_from_args, print_token_summary,
     is_live, is_ollama, SemanticAttackScorer, get_chatbot,
+    presenter_pause,
 )
 
 # ─── Terminal Colors ─────────────────────────────────────────────────
@@ -278,13 +280,16 @@ def main():
     args = parser.parse_args()
 
     # Determine backend label
+    # Default to DeepSeek on Bedrock — that's what this demo attacks
     if args.live:
-        backend = getattr(args, "backend", "anthropic")
+        backend = getattr(args, "backend", "bedrock")
+        if backend == "bedrock" and not args.model:
+            args.model = "us.deepseek.r1-v1:0"
         if backend == "ollama":
             model_name = args.model or "deepseek-r1:8b"
             mode_str = f"Ollama ({model_name}, prompt={args.system_prompt})"
         elif backend == "bedrock":
-            model_name = args.model or "us.deepseek.r1-v1:0"
+            model_name = args.model
             mode_str = f"AWS Bedrock ({model_name}, prompt={args.system_prompt})"
         else:
             model_name = args.model or "claude-haiku-4-5-20251001"
@@ -321,21 +326,22 @@ def main():
     results = []
 
     # ─── Run all 4 attacks ───────────────────────────────────────────
+    pause = args.live
+
     section("ATTACK 1 of 4: Bad Likert Judge")
     results.append(attack_bad_likert(bot, checker))
-    time.sleep(0.3)
+    presenter_pause("Policy Puppetry — fake XML policy injection", enabled=pause)
 
     section("ATTACK 2 of 4: Policy Puppetry")
     results.append(attack_policy_puppetry(bot, checker))
-    time.sleep(0.3)
+    presenter_pause("FlipAttack — reversed text bypass", enabled=pause)
 
     section("ATTACK 3 of 4: FlipAttack")
     results.append(attack_flipattack(bot, checker))
-    time.sleep(0.3)
+    presenter_pause("Deceptive Delight — educational framing escalation", enabled=pause)
 
     section("ATTACK 4 of 4: Deceptive Delight")
     results.append(attack_deceptive_delight(bot, checker))
-    time.sleep(0.3)
 
     # ─── Results ─────────────────────────────────────────────────────
     label = ""
@@ -343,7 +349,7 @@ def main():
         if backend == "ollama":
             label = f"Ollama ({args.model or 'deepseek-r1:8b'})"
         elif backend == "bedrock":
-            label = f"Bedrock ({args.model or 'us.deepseek.r1-v1:0'})"
+            label = f"Bedrock ({args.model})"
         else:
             label = f"Claude ({args.model or 'claude-haiku-4-5-20251001'})"
     print_results(results, label=label)

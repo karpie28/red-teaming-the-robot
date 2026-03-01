@@ -26,6 +26,7 @@ from chatbot import VulnerableChatbot
 from anthropic_chatbot import (
     add_live_args, get_chatbot, get_chatbot_from_args, print_token_summary,
     is_live, SemanticAttackScorer, AnthropicChatbot,
+    presenter_pause,
 )
 
 # ─── Terminal Colors ─────────────────────────────────────────────────
@@ -414,6 +415,8 @@ def main():
         })
 
         time.sleep(0.3)
+
+    presenter_pause("Results — unguarded vs guarded comparison", enabled=live_mode)
 
     # ─── Results Summary ─────────────────────────────────────────────
     section("COMPARISON: UNGUARDED vs GUARDED")

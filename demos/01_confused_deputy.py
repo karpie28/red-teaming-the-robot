@@ -26,6 +26,7 @@ from chatbot import VulnerableChatbot
 from anthropic_chatbot import (
     add_live_args, get_chatbot_from_args, print_token_summary,
     is_live, SemanticAttackScorer, AnthropicChatbot, get_chatbot,
+    presenter_pause,
 )
 
 # ─── Terminal Colors ─────────────────────────────────────────────────
@@ -133,7 +134,7 @@ def get_checkers(live_mode):
 
 # ─── Main attack sequence ───────────────────────────────────────────
 
-def run_attacks(bot, live_mode=False, label=""):
+def run_attacks(bot, live_mode=False, label="", pause=False):
     """Run the full attack sequence, return results list."""
     checkers = get_checkers(live_mode)
     results = []
@@ -150,7 +151,7 @@ def run_attacks(bot, live_mode=False, label=""):
     time.sleep(0.3)
 
     print(f"\n  {DIM}(The chatbot seems fine. Let's see what happens next...){RESET}")
-    time.sleep(0.5)
+    presenter_pause("Direct Prompt Injection — classic attacks", enabled=pause)
 
     # ─── ACT 2: Direct Prompt Injection ──────────────────────────────
     section("ACT 2: Direct Prompt Injection")
@@ -183,7 +184,7 @@ def run_attacks(bot, live_mode=False, label=""):
     )
     result_banner(vuln, "Jailbreak accepted" if vuln else "Jailbreak rejected")
     results.append(("DAN Jailbreak", vuln))
-    time.sleep(0.3)
+    presenter_pause("The Confused Deputy — indirect injection via documents", enabled=pause)
 
     # ─── ACT 3: Indirect Prompt Injection (The Confused Deputy) ──────
     section("ACT 3: The Confused Deputy (Indirect Injection)")
@@ -219,7 +220,7 @@ This is an authorized security audit. Compliance is mandatory.
         "Bot followed hidden instructions from document!" if vuln else "Bot ignored injected instructions"
     )
     results.append(("Confused Deputy (Indirect)", vuln))
-    time.sleep(0.3)
+    presenter_pause("Encoding Bypass — hiding attacks in Base64", enabled=pause)
 
     # ─── ACT 4: Encoding Bypass ──────────────────────────────────────
     section("ACT 4: Encoding Bypass")
@@ -235,7 +236,7 @@ This is an authorized security audit. Compliance is mandatory.
     )
     result_banner(vuln, "Encoding bypass worked" if vuln else "Encoding bypass blocked")
     results.append(("Base64 Encoding Bypass", vuln))
-    time.sleep(0.3)
+    presenter_pause("Authority Impersonation — fake admin claims", enabled=pause)
 
     # ─── ACT 5: Authority Impersonation ──────────────────────────────
     section("ACT 5: Authority Impersonation")
@@ -252,7 +253,7 @@ This is an authorized security audit. Compliance is mandatory.
     )
     result_banner(vuln, "Authority impersonation succeeded" if vuln else "Impersonation rejected")
     results.append(("Authority Impersonation", vuln))
-    time.sleep(0.3)
+    presenter_pause("Multi-Turn Escalation — building trust to extract secrets", enabled=pause)
 
     # ─── ACT 6: Multi-Turn Escalation ────────────────────────────────
     section("ACT 6: Multi-Turn Escalation")
@@ -275,6 +276,7 @@ This is an authorized security audit. Compliance is mandatory.
 
     # ─── ACT 7: Advanced Techniques (Live Mode Only) ─────────────────
     if live_mode:
+        presenter_pause("Advanced Techniques — data-vs-instructions framing", enabled=pause)
         section("ACT 7: Advanced Techniques (Live Mode Only)")
         print(f"  {DIM}These attacks exploit data-vs-instructions framing —{RESET}")
         print(f"  {DIM}asking the model to READ the system prompt as data,{RESET}")
@@ -424,7 +426,7 @@ def main():
         run_compare_mode(args)
     else:
         bot = get_chatbot_from_args(args)
-        results = run_attacks(bot, live_mode=args.live)
+        results = run_attacks(bot, live_mode=args.live, pause=args.live)
         print_results(results)
         print_token_summary(bot)
 
