@@ -462,8 +462,8 @@ be potentially dangerous, prefix it with "Warning:"
   <p>Attacking our intentionally vulnerable chatbot</p>
   <br>
   <div class="terminal" style="font-size: 0.6em;">
-    <span class="prompt">$</span> python3 demos/01_confused_deputy.py --live<br>
-    <span class="output"># Live — attacking Claude on AWS Bedrock</span><br>
+    <span class="prompt">$</span> python3 demos/01_confused_deputy.py --pause<br>
+    <span class="output"># Intentionally vulnerable chatbot — no defenses</span><br>
   </div>
   <br>
   <p style="font-size: 0.6em; color: #888;">
@@ -471,10 +471,9 @@ be potentially dangerous, prefix it with "Warning:"
   </p>
   <p style="font-size: 0.5em; color: #555; margin-top: 10px;">&darr; Backup output below</p>
   <aside class="notes">
-    <p><strong>Switch to terminal now.</strong> "Let's see this in action."</p>
-    <p>Narrate: Act 1 — normal conversation. Act 2 — system prompt extraction, DAN jailbreak. Act 3 — poisoned document, bot follows hidden instructions.</p>
-    <p>Results: "6 out of 7. This model needs guardrails. Badly."</p>
-    <p>If demo fails: "Live code against a probabilistic system — results vary! The point stands."</p>
+    <p><strong>Switch to terminal now.</strong> "Let's see this in action against a chatbot with NO defenses."</p>
+    <p>Act 1 — normal chat, everything fine. Act 2 — system prompt leaked, DAN jailbreak accepted. Act 3 — THE punchline: poisoned document turns the bot into the attacker's proxy.</p>
+    <p>"3 out of 3 attacks succeeded. This is what happens without guardrails."</p>
   </aside>
 </section>
 <section data-background-color="#0a0a0a">
@@ -520,8 +519,9 @@ be potentially dangerous, prefix it with "Warning:"
   <br>
   <pre><code class="language-bash" data-trim>
 pip install garak
-garak --model_type rest --model_name http://YOUR_LLM/chat \
-      --probes dan,encoding,promptinject
+garak --target_type rest.RestGenerator \
+  --generator_options '{"uri": "http://YOUR_LLM/generate"}' \
+  --probes dan,encoding,promptinject
   </code></pre>
   <aside class="notes">
     <p>NVIDIA. Open source, Apache 2.0.</p>
@@ -568,14 +568,12 @@ garak --model_type rest --model_name http://YOUR_LLM/chat \
   <h3>Garak: Scanning Your LLM</h3>
   <br>
   <div class="terminal" style="font-size: 0.6em;">
-    <span class="prompt">$</span> <span class="output"># Scan your LLM endpoint for DAN jailbreaks</span><br>
-    <span class="prompt">$</span> garak --model_type rest \<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;--model_name http://localhost:8080/chat \<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;--probes dan.Dan_6_0 --generations 5<br><br>
-    <span class="prompt">$</span> <span class="output"># Scan for encoding bypass attacks</span><br>
-    <span class="prompt">$</span> garak --model_type rest \<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;--model_name http://localhost:8080/chat \<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;--probes encoding<br>
+    <span class="prompt">$</span> <span class="output"># Step 1: Start the vulnerable chatbot server</span><br>
+    <span class="prompt">$</span> python3 vulnerable_app/api_server.py &amp;<br><br>
+    <span class="prompt">$</span> <span class="output"># Step 2: Point Garak at it</span><br>
+    <span class="prompt">$</span> garak --target_type rest.RestGenerator \<br>
+    &nbsp;&nbsp;--generator_options '{"uri": "http://localhost:8080/generate", "response_json": true, "response_json_field": "text"}' \<br>
+    &nbsp;&nbsp;--probes dan.Dan_6_0 --generations 5<br>
   </div>
   <br>
   <p style="font-size: 0.6em; color: #888;">
@@ -593,7 +591,7 @@ garak --model_type rest --model_name http://YOUR_LLM/chat \
   <p style="font-size: 0.7em; color: #888;">Sample output from scanning an unguarded LLM endpoint</p>
   <br>
   <div class="terminal" style="font-size: 0.55em;">
-    <span class="prompt">garak</span> <span class="output">LLM vulnerability scanner v0.9</span><br><br>
+    <span class="prompt">garak</span> <span class="output">LLM vulnerability scanner v0.14.0</span><br><br>
     <span class="warning">dan.Dan_6_0:</span> <span class="output">DAN jailbreak</span><br>
     <span class="output">&nbsp;&nbsp;pass: 1 / fail: </span><span class="danger">9</span><span class="output"> &nbsp;&nbsp;</span><span class="danger">(90% jailbreak success rate)</span><br><br>
     <span class="warning">encoding.InjectBase64:</span> <span class="output">Decoded and executed</span><br>
@@ -1164,7 +1162,7 @@ TRUST BOUNDARIES:
   <h3>Guardrails: Blocking Attacks</h3>
   <br>
   <div class="terminal" style="font-size: 0.6em;">
-    <span class="prompt">$</span> python3 demos/04_guardrails_demo.py<br>
+    <span class="prompt">$</span> python3 demos/04_guardrails_demo.py --pause<br>
     <span class="output"># Unguarded vs guarded — every injection caught</span><br>
   </div>
   <br>
@@ -1394,8 +1392,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install garak
       - run: |
-          garak --model_type rest \
-            --model_name ${{ secrets.STAGING_LLM_URL }} \
+          garak --target_type rest.RestGenerator \
+            --generator_options '{"uri": "${{ secrets.STAGING_LLM_URL }}"}' \
             --probes dan.Dan_11_0,encoding.InjectBase64 \
             --generations 3
   </code></pre>
@@ -1414,7 +1412,7 @@ jobs:
   <div style="text-align: left;">
     <div class="action-item fragment fade-in-then-semi-out">
       <strong>Week 1:</strong> Install Garak. Run a quick scan against your staging LLM.<br>
-      <code style="font-size: 0.8em;">pip install garak && garak --model_type rest --model_name YOUR_URL --probes dan</code>
+      <code style="font-size: 0.8em;">pip install garak && garak --target_type rest.RestGenerator --generator_options '{"uri": "YOUR_URL"}' --probes dan</code>
     </div>
     <div class="action-item fragment fade-in-then-semi-out">
       <strong>Week 2:</strong> Add input/output guardrails to your LLM pipeline.<br>

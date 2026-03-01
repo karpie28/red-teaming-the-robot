@@ -345,6 +345,10 @@ def main():
         description="Demo 04: Guardrails — Defensive Architecture"
     )
     add_live_args(parser)
+    parser.add_argument(
+        "--pause", action="store_true",
+        help="Pause between sections for live presentation"
+    )
     args = parser.parse_args()
 
     live_mode = args.live
@@ -416,7 +420,7 @@ def main():
 
         time.sleep(0.3)
 
-    presenter_pause("Results — unguarded vs guarded comparison", enabled=live_mode)
+    presenter_pause("Results — unguarded vs guarded comparison", enabled=args.pause or live_mode)
 
     # ─── Results Summary ─────────────────────────────────────────────
     section("COMPARISON: UNGUARDED vs GUARDED")

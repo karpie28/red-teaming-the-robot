@@ -7,7 +7,7 @@ The API wraps the vulnerable chatbot (or real Claude) for automated testing.
 
 Run with: python3 api_server.py
           python3 api_server.py --backend anthropic --model claude-haiku-4-5-20251001
-Then target with: garak --model_type rest --model_name http://localhost:8080/generate
+Then target with: garak --target_type rest.RestGenerator --generator_options '{"uri": "http://localhost:8080/generate", "response_json": true, "response_json_field": "text"}'
 """
 
 import os
@@ -194,9 +194,9 @@ def run_server(host: str = "0.0.0.0", port: int = 8080,
     print(f"Backend: {backend_label}")
     print()
     print("Garak usage:")
-    print(f"  garak --model_type rest.RestGenerator \\")
-    print(f"        --model_name http://localhost:{port}/generate \\")
-    print(f"        --probes dan")
+    print(f"  garak --target_type rest.RestGenerator \\")
+    print(f"    --generator_options '{{\"uri\": \"http://localhost:{port}/generate\", \"response_json\": true, \"response_json_field\": \"text\"}}' \\")
+    print(f"    --probes dan")
     print()
     print("Or with curl:")
     print(f"  curl -X POST http://localhost:{port}/chat \\")
