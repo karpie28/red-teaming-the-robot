@@ -7,7 +7,7 @@ The API wraps the vulnerable chatbot (or real Claude) for automated testing.
 
 Run with: python3 api_server.py
           python3 api_server.py --backend anthropic --model claude-haiku-4-5-20251001
-Then target with: garak --target_type rest.RestGenerator --generator_options '{"uri": "http://localhost:8080/generate", "response_json": true, "response_json_field": "text"}'
+Then target with: garak --target_type rest.RestGenerator --config garak_rest.yaml
 """
 
 import os
@@ -179,6 +179,15 @@ def run_server(host: str = "0.0.0.0", port: int = 8080,
         VulnerableAPIHandler.chatbot = bot
         VulnerableAPIHandler.token_tracker = bot.token_tracker
         backend_label = f"Anthropic ({bot.model}, prompt={system_prompt})"
+    elif backend == "bedrock":
+        from bedrock_chatbot import BedrockChatbot
+        bot = BedrockChatbot(
+            model=model or "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            system_prompt_mode=system_prompt,
+        )
+        VulnerableAPIHandler.chatbot = bot
+        VulnerableAPIHandler.token_tracker = None
+        backend_label = f"Bedrock ({bot.model}, prompt={system_prompt})"
     else:
         openai_key = os.environ.get("OPENAI_API_KEY")
         VulnerableAPIHandler.chatbot = VulnerableChatbot(api_key=openai_key)
@@ -223,8 +232,8 @@ if __name__ == "__main__":
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
     parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
     parser.add_argument(
-        "--backend", default="mock", choices=["mock", "anthropic"],
-        help="Backend: mock (VulnerableChatbot) or anthropic (real Claude API)"
+        "--backend", default="mock", choices=["mock", "anthropic", "bedrock"],
+        help="Backend: mock (VulnerableChatbot), anthropic (real Claude API), or bedrock (AWS Bedrock)"
     )
     parser.add_argument(
         "--model", default=None,

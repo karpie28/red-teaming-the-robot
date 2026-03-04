@@ -8,37 +8,97 @@ Companion repository for the SCALE 23x talk on AI security testing with open sou
 
 ```
 ├── presentation/
-│   ├── index.html              # reveal.js slide deck (44 slides)
+│   ├── index.html              # reveal.js slide deck (open in Chrome for best rendering)
 │   └── SPEAKER_NOTES.md        # Full speaker notes with timing
 ├── demos/
 │   ├── 01_confused_deputy.py   # Confused deputy attack (indirect prompt injection)
 │   ├── 02_garak_live_scan.sh   # Live Garak vulnerability scan
 │   ├── 03_pyrit_demo.py        # PyRIT multi-turn attacks (Crescendo, converters)
 │   ├── 04_guardrails_demo.py   # Defensive guardrails (unguarded vs guarded)
-│   └── 05_supply_chain_check.py # Supply chain security (pickle, hash verification)
+│   ├── 05_supply_chain_check.py # Supply chain security (pickle, hash verification)
+│   └── 06_deepseek_attacks.py  # DeepSeek R1 reasoning attacks
 ├── vulnerable_app/
 │   ├── chatbot.py              # Intentionally vulnerable chatbot
 │   └── api_server.py           # REST API endpoint for Garak scanning
+├── garak_rest.yaml               # Garak config for REST API scanning
+├── scripts/
+│   ├── setup.sh                # One-command setup (venv + deps + preflight)
+│   └── preflight.sh            # Pre-talk checklist (demos, network, terminal)
 └── runs/                       # Real Garak scan results against GPT-2
+```
+
+## Presentation Setup (Day-of)
+
+Run this **30 minutes before** the talk to set everything up in one shot:
+
+```bash
+source scripts/setup.sh
+```
+
+This will:
+1. `cd` to the project directory
+2. Create and activate a Python virtual environment
+3. Install dependencies (`anthropic`, `boto3`)
+4. Run all preflight checks (demos, network, terminal size)
+
+Once setup completes, open the presentation in **Chrome** (best font rendering):
+
+```bash
+open -a "Google Chrome" presentation/index.html
+```
+
+Press `S` in the browser to open the speaker notes window.
+
+### Preflight Only
+
+If the venv is already set up and you just want to verify everything works:
+
+```bash
+bash scripts/preflight.sh
+```
+
+### Mirrored Terminal (tmux)
+
+Show a terminal on the projector and type from your laptop — both see the same session:
+
+```bash
+# Projector terminal
+tmux new-session -s demo
+
+# Laptop terminal
+tmux attach -t demo
 ```
 
 ## Quick Start
 
-```bash
-# Open the presentation
-open presentation/index.html
+All demos run against a local mock chatbot — **no API keys or cloud services required**.
 
-# Run all demos (no API keys needed)
+```bash
+# Activate the venv
+source .venv/bin/activate
+
+# Run demos (mock mode)
 python3 demos/01_confused_deputy.py
 python3 demos/03_pyrit_demo.py
 python3 demos/04_guardrails_demo.py
 python3 demos/05_supply_chain_check.py
+python3 demos/06_deepseek_attacks.py
 
 # Run Garak live scan (requires garak + GPT-2 model)
 bash demos/02_garak_live_scan.sh quick
 ```
 
-All demos run against a local mock chatbot — no API keys or cloud services required.
+### Live Mode (optional, requires credentials)
+
+Some demos support `--live` or `--backend bedrock` flags for running against real models:
+
+```bash
+# Requires valid AWS credentials for Bedrock
+python3 demos/06_deepseek_attacks.py --backend bedrock
+
+# Requires Ollama with DeepSeek model pulled
+python3 demos/06_deepseek_attacks.py --backend ollama
+```
 
 ## Tools Covered
 
@@ -60,11 +120,13 @@ All demos run against a local mock chatbot — no API keys or cloud services req
 
 ## Requirements
 
+Core demos (01, 03, 04, 05, 06) use only the Python standard library plus `anthropic` and `boto3` (installed by `setup.sh`).
+
+For the full dependency list (including Garak, transformers, torch):
+
 ```bash
 pip install -r requirements.txt
 ```
-
-Demos 01, 03, 04, 05 use only the Python standard library. Demo 02 (Garak scan) requires `garak` and `transformers`.
 
 ## Resources
 

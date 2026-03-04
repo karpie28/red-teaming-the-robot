@@ -4,7 +4,8 @@
 #   1. cd to the project directory
 #   2. Create/activate the Python venv
 #   3. Install dependencies
-#   4. Run the preflight checks
+#   4. Refresh AWS credentials (for --live demos)
+#   5. Run the preflight checks
 #
 # Usage (works in both zsh and bash):
 #   source ~/projects/redteaming/scripts/setup.sh
@@ -75,21 +76,35 @@ echo -e "\n${CYAN}[3/4] Dependencies${RESET}"
 _DEPS_NEEDED=0
 python3 -c "import anthropic" 2>/dev/null || _DEPS_NEEDED=1
 python3 -c "import boto3"     2>/dev/null || _DEPS_NEEDED=1
+python3 -c "import pyrit"     2>/dev/null || _DEPS_NEEDED=1
 
 if [[ "$_DEPS_NEEDED" -eq 1 ]]; then
     echo -e "  Installing packages..."
     pip install -q --upgrade pip 2>/dev/null
     pip install -q anthropic boto3 'botocore[crt]' 2>/dev/null
+    # PyRIT requires Python <3.14; --ignore-requires-python handles Python 3.14+
+    pip install -q --ignore-requires-python pyrit 2>/dev/null
     # Verify install worked
-    python3 -c "import anthropic; import boto3" 2>/dev/null \
-        || _fail "pip install failed — check network and try: pip install anthropic boto3"
+    python3 -c "import anthropic; import boto3; import pyrit" 2>/dev/null \
+        || _fail "pip install failed — check network and try: pip install anthropic boto3 pyrit"
     echo -e "  ${GREEN}[OK]${RESET} Packages installed"
 else
     echo -e "  ${GREEN}[OK]${RESET} All packages present"
 fi
 
-# ─── 4. Preflight checks ─────────────────────────────────
-echo -e "\n${CYAN}[4/4] Running preflight checks...${RESET}\n"
+# ─── 4. AWS credentials ─────────────────────────────────
+echo -e "\n${CYAN}[4/5] AWS credentials${RESET}"
+
+if aws sts get-caller-identity &>/dev/null; then
+    echo -e "  ${GREEN}[OK]${RESET} AWS session active"
+else
+    echo -e "  ${YELLOW}[WARN]${RESET} AWS session expired — refreshing..."
+    aws login || _fail "aws login failed — run it manually"
+    echo -e "  ${GREEN}[OK]${RESET} AWS session refreshed"
+fi
+
+# ─── 5. Preflight checks ─────────────────────────────────
+echo -e "\n${CYAN}[5/5] Running preflight checks...${RESET}\n"
 bash scripts/preflight.sh
 
 # ─── Done ─────────────────────────────────────────────────
