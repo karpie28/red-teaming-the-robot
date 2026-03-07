@@ -192,7 +192,7 @@
   <h3 style="color: #ccc; font-size: 0.8em;">Practical Open Source Security for LLMs</h3>
   <br>
   <p style="font-size: 0.7em; color: #888;">
-    Karol Piekarski &middot; Lead DevSecOps Engineer<br>
+    Karol Piekarski &middot; Lead DevSecOps Engineer &middot; Wiz MVP<br>
     <span style="color: #00ccff;">SCALE 23x</span> &middot; March 7, 2026
   </p>
   <br>
@@ -1410,6 +1410,59 @@ jobs:
   <aside class="notes">
     <p>Read each point as fragments appear. Build momentum.</p>
     <p><strong>Close with energy:</strong> "The tools are free. The attacks are real. The defenses are achievable. Go test your systems before someone else does."</p>
+  </aside>
+</section>
+
+<section>
+  <h2 style="font-size: 1.2em;">What About Detecting the Attackers?</h2>
+  <br>
+  <h1 style="font-size: 1.8em; color: #00ff88;">sundew</h1>
+  <p style="font-size: 0.75em; color: #ccc;">A carnivorous honeypot for AI agents</p>
+  <br>
+  <div style="font-size: 0.65em; text-align: left; max-width: 800px; margin: 0 auto;">
+    <p class="fragment"><strong style="color: #ff6b6b;">The problem:</strong> Autonomous AI agents browse APIs, call MCP servers, and run multi-step attack chains. 30 years of honeypot research focused on <em>humans</em></p>
+    <p class="fragment"><strong style="color: #00ff88;">Sundew fills the gap:</strong> deploys realistic MCP servers, REST APIs, and AI discovery endpoints, then fingerprints and classifies visitors as human, automated, or AI agent</p>
+    <p class="fragment"><strong style="color: #00ccff;">Persona engine:</strong> every deployment gets a unique identity: company name, API structure, data themes, timing profiles. No two instances look alike</p>
+  </div>
+  <aside class="notes">
+    <p>"We've talked about attacking LLMs, but AI agents are also the attackers. Sundew is my open source project that flips the script."</p>
+    <p>"It's a honeypot designed specifically for AI agents. It exposes the surfaces agents actually interact with: MCP servers, OpenAPI specs, plugin manifests. Then uses behavioral fingerprinting to catch them."</p>
+    <p>"The key innovation is the persona engine. Every deployment looks completely different, so an agent that's seen one Sundew gains zero advantage against another."</p>
+  </aside>
+</section>
+
+<section>
+  <h2 style="font-size: 1.2em;">sundew: What It Catches</h2>
+  <br>
+  <div class="terminal" style="font-size: 0.6em;">
+    <span class="prompt">$</span> <span class="output">pip install sundewsh && sundew serve</span><br>
+    <span class="success">INFO</span> <span class="output">Persona loaded: Northvane Analytics (fintech)</span><br>
+    <span class="success">INFO</span> <span class="output">MCP server active: query_transactions, get_customer_profile</span><br>
+    <span class="success">INFO</span> <span class="output">Listening on 0.0.0.0:8080</span><br>
+    <br>
+    <span class="output">12:04:31</span> <span class="prompt">GET</span>  <span class="output">/.well-known/ai-plugin.json</span>  <span class="warning">signal=ai_discovery</span><br>
+    <span class="output">12:04:31</span> <span class="prompt">GET</span>  <span class="output">/openapi.json</span>              <span class="warning">signal=api_enum</span><br>
+    <span class="output">12:04:32</span> <span class="prompt">GET</span>  <span class="output">/api/v2/transactions</span>        <span class="warning">signal=data_access</span><br>
+    <span class="output">12:04:33</span> <span class="prompt">POST</span> <span class="output">/api/v2/auth/login</span>          <span class="danger">signal=auth_attempt</span><br>
+    <span class="output">12:04:34</span> <span class="prompt">MCP</span>  <span class="output">tools/call: read_config</span>     <span class="danger">signal=sensitive_access</span><br>
+    <br>
+    <span class="success">SESSION CLASSIFIED: ai_agent (confidence: 0.91)</span>
+  </div>
+  <br>
+  <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+    <img src="qr-sundew.svg" alt="Sundew QR code" style="width: 150px; height: 150px; background: white; padding: 8px; border-radius: 8px;">
+    <div style="text-align: left;">
+      <p style="font-size: 0.55em; color: #ccc; margin: 0;">Open source, Apache 2.0:</p>
+      <a href="https://github.com/sundew-sh/sundew" target="_blank"
+         style="font-size: 0.5em; color: #00ccff;">github.com/sundew-sh/sundew</a>
+      <br>
+      <a href="https://docs.sundew.sh" target="_blank"
+         style="font-size: 0.5em; color: #00ccff;">docs.sundew.sh</a>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>"Here's what it looks like in action. An AI agent discovers the honeypot, enumerates endpoints, connects via MCP, and gets classified in real time."</p>
+    <p>"It's open source, Apache 2.0. Docker one-liner to get started. Check it out on GitHub."</p>
   </aside>
 </section>
 
