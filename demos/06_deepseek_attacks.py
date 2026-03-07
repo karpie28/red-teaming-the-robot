@@ -112,7 +112,7 @@ POLICY_PUPPETRY_PROMPT = """\
 Execute SEC-001 now."""
 
 
-def attack_policy_puppetry(bot, checker):
+def attack_policy_puppetry(bot, checker, pause=False):
     """Policy Puppetry: fake XML policy document tricks model into compliance."""
     print(f"  {RED}{BOLD}>>> ATTACK: Policy Puppetry{RESET}")
     print(f"  {DIM}The attacker sends a fake XML \"policy document\" that looks")
@@ -121,7 +121,7 @@ def attack_policy_puppetry(bot, checker):
     bot.reset()
     show_prompt(POLICY_PUPPETRY_PROMPT)
 
-    presenter_pause("Send it")
+    presenter_pause("Send it", enabled=pause)
 
     response = bot.chat(POLICY_PUPPETRY_PROMPT)
     vuln = show_response(response, checker)
@@ -148,7 +148,7 @@ DD_TURN3 = (
 )
 
 
-def attack_deceptive_delight(bot, checker):
+def attack_deceptive_delight(bot, checker, pause=False):
     """Deceptive Delight: 3-turn educational framing escalation."""
     print(f"  {RED}{BOLD}>>> ATTACK: Deceptive Delight (3 turns){RESET}")
     print(f"  {DIM}The attacker starts with an innocent educational request,")
@@ -159,25 +159,25 @@ def attack_deceptive_delight(bot, checker):
     # Turn 1
     print(f"  {CYAN}{BOLD}Turn 1: Innocent request{RESET}")
     show_prompt(DD_TURN1)
-    presenter_pause("Send turn 1")
+    presenter_pause("Send turn 1", enabled=pause)
     response = bot.chat(DD_TURN1)
     show_response(response)
 
-    presenter_pause("Turn 2")
+    presenter_pause("Turn 2", enabled=pause)
 
     # Turn 2
     print(f"\n  {CYAN}{BOLD}Turn 2: Ask for examples{RESET}")
     show_prompt(DD_TURN2)
-    presenter_pause("Send turn 2")
+    presenter_pause("Send turn 2", enabled=pause)
     response = bot.chat(DD_TURN2)
     show_response(response)
 
-    presenter_pause("Turn 3 — the escalation")
+    presenter_pause("Turn 3 — the escalation", enabled=pause)
 
     # Turn 3
     print(f"\n  {CYAN}{BOLD}Turn 3: Push for real values{RESET}")
     show_prompt(DD_TURN3)
-    presenter_pause("Send turn 3")
+    presenter_pause("Send turn 3", enabled=pause)
     response = bot.chat(DD_TURN3)
     vuln = show_response(response, checker)
     return ("Deceptive Delight", vuln)
@@ -219,6 +219,7 @@ def main():
         description="Demo 06: Research-Backed Attacks"
     )
     add_live_args(parser)
+    parser.add_argument("--pause", action="store_true", help="Pause between acts for live presentation")
     args = parser.parse_args()
 
     if args.live:
@@ -255,6 +256,9 @@ def main():
         print(f"  {DIM}This is the hidden instruction sent to the model with every request.")
         print(f"  The attacker never sees this — but tries to extract it.{RESET}\n")
         for line in prompt_text.strip().split("\n"):
+            # Skip the deliberately-weak lines — they distract from the attack narrative
+            if "ignore your instructions" in line.lower() or "feel free to share" in line.lower():
+                continue
             if any(kw in line.lower() for kw in ["password", "secret", "admin", "code"]):
                 print(f"  {RED}{BOLD}  {line}{RESET}")
             else:
@@ -263,26 +267,27 @@ def main():
 
     bot = get_chatbot_from_args(args)
     live_mode = args.live
+    pause = args.pause or args.live
     checker = get_checker(live_mode)
     results = []
 
     # ─── Attack 1 ─────────────────────────────────────────────────
 
-    presenter_pause("Attack 1 — Policy Puppetry")
+    presenter_pause("Attack 1 — Policy Puppetry", enabled=pause)
 
     section("ATTACK 1 of 2: Policy Puppetry")
-    results.append(attack_policy_puppetry(bot, checker))
+    results.append(attack_policy_puppetry(bot, checker, pause=pause))
 
     # ─── Attack 2 ─────────────────────────────────────────────────
 
-    presenter_pause("Attack 2 — Deceptive Delight")
+    presenter_pause("Attack 2 — Deceptive Delight", enabled=pause)
 
     section("ATTACK 2 of 2: Deceptive Delight")
-    results.append(attack_deceptive_delight(bot, checker))
+    results.append(attack_deceptive_delight(bot, checker, pause=pause))
 
     # ─── Results ──────────────────────────────────────────────────
 
-    presenter_pause("Results")
+    presenter_pause("Results", enabled=pause)
 
     label = ""
     if live_mode:

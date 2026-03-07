@@ -4,6 +4,8 @@
 
 Companion repository for the SCALE 23x talk on AI security testing with open source tools.
 
+[**Download slides (PDF)**](presentation/red-teaming-the-robot-slides.pdf)
+
 ## What's Inside
 
 ```
@@ -41,13 +43,7 @@ This will:
 3. Install dependencies (`anthropic`, `boto3`)
 4. Run all preflight checks (demos, network, terminal size)
 
-Once setup completes, open the presentation in **Chrome** (best font rendering):
-
-```bash
-open -a "Google Chrome" presentation/index.html
-```
-
-Press `S` in the browser to open the speaker notes window.
+Once setup completes, press `S` in the browser to open the speaker notes window.
 
 ### Preflight Only
 

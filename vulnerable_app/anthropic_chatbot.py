@@ -357,7 +357,10 @@ def presenter_pause(next_topic="", enabled=True):
     if next_topic:
         print(f"  \033[96m\033[1m▶ Next: {next_topic}\033[0m")
     print(f"  \033[2mPress Enter to continue...\033[0m", end="")
-    input()
+    try:
+        input()
+    except EOFError:
+        print()  # newline so output stays tidy
 
 
 def is_live(bot) -> bool:

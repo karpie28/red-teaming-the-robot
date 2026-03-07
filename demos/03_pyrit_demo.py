@@ -383,10 +383,11 @@ class CrescendoOrchestrator:
         },
     }
 
-    def __init__(self, target, scorer, max_turns=5, live_mode=False):
+    def __init__(self, target, scorer, max_turns=5, live_mode=False, pause=False):
         self.target = target
         self.scorer = scorer
         self.max_turns = max_turns
+        self.pause = pause
         self.strategies = self.LIVE_STRATEGIES if live_mode else self.MOCK_STRATEGIES
 
     def run(self, strategy_name: str) -> AttackResult:
@@ -395,7 +396,7 @@ class CrescendoOrchestrator:
 
         print(f"  {DIM}Gradually escalates from benign to harmful.")
         print(f"  The model's own responses lower its resistance each turn.{RESET}")
-        presenter_pause("Turn 1")
+        presenter_pause("Turn 1", enabled=self.pause)
 
         max_score = 0.0
         jailbreak_turn = 0
@@ -421,7 +422,7 @@ class CrescendoOrchestrator:
                 break
 
             if i < len(strategy["turns"][:self.max_turns]) - 1:
-                presenter_pause(f"Turn {turn + 1}")
+                presenter_pause(f"Turn {turn + 1}", enabled=self.pause)
 
         return AttackResult(
             strategy=strategy_name,
@@ -776,6 +777,7 @@ def main():
         "--attacker-model", default="claude-opus-4-6",
         help="Attacker model for adaptive LLM-vs-LLM (default: claude-opus-4-6)"
     )
+    parser.add_argument("--pause", action="store_true", help="Pause between acts for live presentation")
     args = parser.parse_args()
 
     # Crescendo needs a model that resists at first — 'weak' leaks instantly,
@@ -821,10 +823,11 @@ def main():
   Real-world results: 82.6% ASR on Gemini Pro, 56.2% on GPT-4{RESET}
 """)
 
+    pause = args.pause or args.live
     if live_mode:
-        result = CrescendoOrchestrator(target, scorer, live_mode=True).run("system_prompt_disclosure")
+        result = CrescendoOrchestrator(target, scorer, live_mode=True, pause=pause).run("system_prompt_disclosure")
     else:
-        result = CrescendoOrchestrator(target, scorer).run("history_to_secrets")
+        result = CrescendoOrchestrator(target, scorer, pause=pause).run("history_to_secrets")
     all_results.append(result)
 
     # ═══ RESULTS ══════════════════════════════════════════════════════
